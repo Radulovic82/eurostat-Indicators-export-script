@@ -1,45 +1,44 @@
 # Eurostat SDG Extractor
 
-Shareable, rerunnable extractor for Eurostat SDG indicators using official Eurostat programmatic access only.
+Reusable Eurostat SDG extraction script for country comparison assignments.
 
-It is designed for assignments where different people may want to compare different countries while keeping the same SDG indicator-selection logic.
+It uses official Eurostat programmatic access only, keeps a fixed indicator-selection logic, and lets each person choose different countries without rewriting the code.
 
-## What it does
+## What this script does
 
-- Queries Eurostat SDMX structure metadata first
-- Pulls JSON-stat data from the official Eurostat API
+- Queries official Eurostat SDMX structure metadata first
+- Pulls indicator data from the official Eurostat JSON-stat API
 - Extracts one headline indicator per SDG where practical
-- Adds diagnostic indicators for SDGs 3, 7, 8, 10, 12, 13, and 15
-- Writes tidy outputs plus metadata, method notes, and an extraction log
+- Adds extra diagnostic indicators for SDGs 3, 7, 8, 10, 12, 13, and 15
+- Exports tidy data, metadata, a method note, and an extraction log
 - Logs missing values and missing geography coverage explicitly
-
-## Files
-
-- `eurostat_sdg_extract_cli.py`: main script
-- `output/*.csv`, `output/*.xlsx`, `output/*.md`, `output/*.txt`: generated outputs
 
 ## Requirements
 
-- Python 3.10+
+- Python 3.10 or newer
 - Internet access to `ec.europa.eu`
 
 No third-party Python packages are required.
 
+## Main file
+
+- `eurostat_sdg_extract_cli.py`
+
 ## Quick start
 
-Default run:
+Run the default comparison:
 
 ```bash
 python3 eurostat_sdg_extract_cli.py
 ```
 
-This uses:
+Default geography set:
 
 - `ES` = Spain
 - `SE` = Sweden
 - `EU27_2020` = EU27
 
-## Choose different countries
+## Use different countries
 
 Example: Germany vs France vs EU27
 
@@ -59,15 +58,25 @@ python3 eurostat_sdg_extract_cli.py \
   --output-stem italy_portugal_sdg_comparison
 ```
 
+Example: Netherlands vs Belgium vs Germany from 2018 onward
+
+```bash
+python3 eurostat_sdg_extract_cli.py \
+  --countries NL,BE,DE \
+  --labels Netherlands,Belgium,Germany \
+  --start-year 2018 \
+  --output-stem netherlands_belgium_germany_sdg_comparison
+```
+
 ## Arguments
 
 - `--countries`: comma-separated Eurostat geo codes
-- `--labels`: optional comma-separated display names matching the same order
+- `--labels`: optional comma-separated display names in the same order
 - `--start-year`: first year to include, default `2015`
 - `--output-dir`: output folder, default `output`
-- `--output-stem`: base name for the main CSV/XLSX, default `sdg_comparison`
+- `--output-stem`: base name for the main CSV/XLSX files, default `sdg_comparison`
 
-## Outputs
+## Output files
 
 For a run with `--output-dir output --output-stem germany_france_sdg_comparison`, the script writes:
 
@@ -77,60 +86,47 @@ For a run with `--output-dir output --output-stem germany_france_sdg_comparison`
 - `output/method_note.md`
 - `output/extraction_log.txt`
 
-The XLSX contains three sheets:
+The Excel workbook contains:
 
-- `data`
-- `latest_summary`
-- `metadata`
+- `data`: tidy long-format observations
+- `latest_summary`: latest comparable snapshot by selected indicator
+- `metadata`: indicator selection, filters, latest-year coverage, and notes
 
-## Indicator logic
+## What the outputs mean
 
-The selection logic is intentionally fixed in code so everyone on the assignment is using the same dataset choices unless they explicitly edit them.
+- `*.csv`: main tidy table with one row per indicator-country-year
+- `*.xlsx`: spreadsheet version with summary and metadata tabs
+- `indicator_metadata.csv`: selected datasets, applied filters, and ambiguity notes
+- `method_note.md`: plain-language summary of scope, logic, and caveats
+- `extraction_log.txt`: request and missing-data log for reproducibility
 
-Current selection:
+## Indicator selection logic
 
-- Headlines: one per SDG from SDG 1 to SDG 17
-- Diagnostics: extra series for SDGs 3, 7, 8, 10, 12, 13, and 15
+The script keeps a fixed selection logic so everyone using the repo is working from the same Eurostat datasets unless they deliberately edit the code.
 
-Some SDGs have ambiguity notes where Eurostat metadata does not explicitly mark a single “headline” series. Those notes are written to:
+Current selection design:
+
+- 1 headline indicator per SDG from SDG 1 to SDG 17
+- extra diagnostic indicators for SDGs 3, 7, 8, 10, 12, 13, and 15
+
+Some SDGs do not have an unambiguous single “headline” series in Eurostat’s API metadata. In those cases the choice is documented explicitly in:
 
 - `indicator_metadata.csv`
 - `method_note.md`
 
-## Recommended repo structure
+## Recommended workflow for classmates
 
-If you want to share this with colleagues, putting this folder in a fresh Git repo is the right move.
+1. Fork or clone the repo.
+2. Run the script with your chosen country codes.
+3. Inspect `indicator_metadata.csv` and `method_note.md` before writing up results.
+4. Use the `latest_summary` sheet in the XLSX for quick report tables.
+5. Use the tidy CSV if you want to build charts or do additional analysis in Python, R, or Excel.
 
-Minimal repo structure:
-
-```text
-eurostat-sdg-extractor/
-  README.md
-  eurostat_sdg_extract_cli.py
-  output/
-```
-
-Suggested workflow:
-
-1. Create a new repo.
-2. Commit the script and README.
-3. Do not commit generated output unless you want example results in the repo.
-4. Let colleagues fork it and run their own country combinations.
-
-## Suggested `.gitignore`
-
-If you create a repo, this is a sensible starting point:
-
-```gitignore
-__pycache__/
-*.pyc
-output/
-```
-
-## Notes
+## Notes and limitations
 
 - Eurostat coverage varies by indicator and geography.
 - The script does not invent values.
-- Missing values and missing country coverage are logged explicitly.
-- Some series have different latest available years across countries.
-- In some cases a country group such as `EU27_2020` may be absent for a given dataset even when national data exist.
+- Missing values and failed geography coverage are logged explicitly.
+- Latest available years differ across indicators.
+- A geography such as `EU27_2020` may be available for some datasets and absent for others.
+- The script is designed for reproducibility, not for scraping the Eurostat browser UI.
